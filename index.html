@@ -1,0 +1,2239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="SelfFusion: Self-Reflective Meta-Optimization for Infrared and Visible Image Fusion." />
+  <meta name="theme-color" content="#fbfdff" />
+  <meta property="og:title" content="SelfFusion | Self-Reflective Infrared and Visible Image Fusion" />
+  <meta property="og:description" content="A modality-reconstructability meta-criterion for fusion learning, without predefined fusion or task losses." />
+  <meta property="og:type" content="website" />
+  <title>SelfFusion | Self-Reflective Infrared–Visible Image Fusion</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,400..800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <script>document.documentElement.classList.add('js');</script>
+
+  <style>
+    /* =============================================================
+       SelfFusion — editorial research homepage
+       Design language: Fraunces display type, cool paper blues,
+       aurora light, mono metadata, and quiet motion.
+       Images live in ./assets and open in a full-screen viewer.
+       ============================================================= */
+    :root {
+      --ink: #10213d;
+      --ink-soft: #2b4563;
+      --muted: #667a92;
+      --muted-light: #8496aa;
+      --line: #dce8f5;
+      --line-strong: #c9dcee;
+      --paper: #fbfdff;
+      --ice: #edf7ff;
+      --blue: #0869ed;
+      --blue-deep: #0755c5;
+      --cyan: #19bdf2;
+      --violet: #7055ef;
+      --navy: #071938;
+      /* --display: "Manrope", "Segoe UI", Arial, sans-serif; */
+      --display: "Inter", Arial, sans-serif;
+      --sans: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      --mono: "DM Mono", "SFMono-Regular", Consolas, monospace;
+      --header-h: 76px;
+      --shadow-sm: 0 10px 26px rgba(33, 88, 145, .07);
+      --shadow-md: 0 22px 54px rgba(25, 77, 132, .10);
+      --shadow-lg: 0 34px 80px rgba(18, 64, 112, .14);
+      --radius: 18px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 16px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    body.is-locked { overflow: hidden; }
+    ::selection { background: rgba(25, 189, 242, .24); color: var(--ink); }
+    img { max-width: 100%; }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: none; }
+    button { font: inherit; }
+    svg { display: block; }
+    sup { line-height: 0; font-size: .66em; vertical-align: super; }
+    section[id], div[id] { scroll-margin-top: calc(var(--header-h) + 22px); }
+
+    .shell {
+      width: min(100% - 48px, 1240px);
+      margin-inline: auto;
+    }
+
+    .skip-link {
+      position: fixed;
+      z-index: 200;
+      top: 10px;
+      left: 50%;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: var(--navy);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      transform: translate(-50%, -180%);
+      transition: transform .2s ease;
+    }
+    .skip-link:focus { transform: translate(-50%, 0); }
+
+    :focus-visible {
+      outline: 3px solid rgba(8, 105, 237, .45);
+      outline-offset: 3px;
+    }
+
+    /* ---------- reading progress ---------- */
+    .progress {
+      position: fixed;
+      z-index: 80;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: transparent;
+      pointer-events: none;
+    }
+    .progress span {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--blue), var(--cyan) 58%, var(--violet));
+      transform: scaleX(0);
+      transform-origin: 0 50%;
+      will-change: transform;
+    }
+
+    /* ---------- fixed header ---------- */
+    .site-header {
+      position: fixed;
+      z-index: 60;
+      top: 0;
+      right: 0;
+      left: 0;
+      height: var(--header-h);
+      border-bottom: 1px solid rgba(215, 229, 243, .78);
+      background: rgba(251, 253, 255, .82);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      backdrop-filter: blur(20px) saturate(160%);
+      transition: background .35s ease, box-shadow .35s ease;
+    }
+    .site-header.is-scrolled {
+      background: rgba(251, 253, 255, .95);
+      box-shadow: 0 14px 40px rgba(23, 67, 118, .07);
+    }
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+      width: min(100% - 48px, 1320px);
+      height: 100%;
+      margin-inline: auto;
+    }
+    .brand {
+      display: inline-flex;
+      flex: none;
+      align-items: center;
+      gap: 11px;
+      color: var(--ink);
+      font-weight: 800;
+      letter-spacing: -.035em;
+    }
+    .brand:hover { color: var(--ink); }
+    .brand-mark {
+      position: relative;
+      display: inline-block;
+      width: 26px;
+      height: 26px;
+    }
+    .brand-mark::before,
+    .brand-mark::after {
+      position: absolute;
+      top: 4px;
+      width: 17px;
+      height: 17px;
+      border: 1.6px solid var(--blue);
+      border-radius: 50%;
+      content: "";
+    }
+    .brand-mark::before { left: 1px; }
+    .brand-mark::after {
+      right: 1px;
+      border-color: var(--violet);
+      opacity: .82;
+    }
+    .brand-mark i {
+      position: absolute;
+      z-index: 2;
+      top: 11px;
+      left: 11px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), var(--violet));
+      box-shadow: 0 0 0 3px rgba(25, 189, 242, .12);
+    }
+    .brand-name {
+      font-family: var(--display);
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -.05em;
+      line-height: 1;
+    }
+    .brand-sub {
+      margin-left: 2px;
+      color: #8a9cb1;
+      font-family: var(--mono);
+      font-size: 8px;
+      font-weight: 400;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .top-nav {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      margin-left: auto;
+    }
+    .nav-link {
+      position: relative;
+      padding: 9px 12px;
+      border-radius: 9px;
+      color: #52657d;
+      font-size: 11.5px;
+      font-weight: 800;
+      white-space: nowrap;
+      transition: color .22s ease, background .22s ease;
+    }
+    .nav-link:hover {
+      background: rgba(232, 244, 255, .8);
+      color: var(--blue);
+    }
+    .nav-link.active {
+      background: #eaf5ff;
+      color: var(--blue-deep);
+    }
+    .nav-link.active::after {
+      position: absolute;
+      right: 11px;
+      bottom: 4px;
+      left: 11px;
+      height: 1px;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--cyan), var(--violet));
+      content: "";
+    }
+    .header-actions { display: flex; flex: none; align-items: center; gap: 10px; }
+    .header-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 14px;
+      border: 1px solid #173252;
+      border-radius: 999px;
+      background: #142d4f;
+      box-shadow: 0 8px 18px rgba(16, 45, 79, .14);
+      color: #fff;
+      font-size: 10.5px;
+      font-weight: 800;
+      transition: transform .25s ease, box-shadow .25s ease, background .25s ease;
+    }
+    .header-cta:hover {
+      background: #0d2342;
+      box-shadow: 0 12px 24px rgba(16, 45, 79, .22);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+    .header-cta svg { width: 13px; height: 13px; }
+    .menu-toggle {
+      display: none;
+      width: 40px;
+      height: 38px;
+      padding: 0;
+      border: 1px solid var(--line-strong);
+      border-radius: 9px;
+      background: rgba(255, 255, 255, .8);
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .menu-toggle span {
+      display: block;
+      width: 17px;
+      height: 1.5px;
+      margin: 4px auto;
+      border-radius: 2px;
+      background: currentColor;
+      transition: transform .25s ease, opacity .25s ease;
+    }
+    .menu-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(5.5px) rotate(45deg); }
+    .menu-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+    .menu-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
+
+    .mobile-menu {
+      position: fixed;
+      z-index: 55;
+      top: calc(var(--header-h) + 9px);
+      right: 14px;
+      left: 14px;
+      display: none;
+      flex-direction: column;
+      gap: 2px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 24px 60px rgba(25, 70, 120, .17);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-8px);
+      transition: opacity .22s ease, transform .22s ease;
+    }
+    .mobile-menu.is-open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: none;
+    }
+    .mobile-menu a {
+      padding: 11px 12px;
+      border-radius: 9px;
+      color: #425a75;
+      font-size: 12.5px;
+      font-weight: 800;
+    }
+    .mobile-menu a:hover,
+    .mobile-menu a.active { background: var(--ice); color: var(--blue); }
+
+    /* ---------- transient on-page guide ---------- */
+    .float-toc {
+      position: fixed;
+      z-index: 45;
+      top: 50%;
+      left: 24px;
+      width: 172px;
+      padding: 14px 10px 11px;
+      border: 1px solid rgba(213, 228, 244, .95);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, .9);
+      box-shadow: 0 16px 44px rgba(26, 77, 134, .13);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-12px, -50%);
+      transition: opacity .18s ease, transform .24s cubic-bezier(.2, .8, .2, 1);
+    }
+    .float-toc.is-visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(0, -50%);
+    }
+    .float-toc > span {
+      display: block;
+      padding: 0 9px 7px;
+      color: #8ea2ba;
+      font-family: var(--mono);
+      font-size: 8px;
+      letter-spacing: .14em;
+    }
+    .float-toc nav { display: grid; gap: 2px; }
+    .float-toc .nav-link {
+      padding: 7px 9px;
+      border-radius: 7px;
+      color: #72869f;
+      font-size: 10.5px;
+    }
+    .float-toc .nav-link::before {
+      margin-right: 6px;
+      color: #b3c1d2;
+      font-family: var(--mono);
+      font-size: 8px;
+      content: attr(data-index);
+    }
+    .float-toc .nav-link.active {
+      background: linear-gradient(90deg, #eaf5ff, #f2efff);
+      color: var(--blue-deep);
+    }
+    .float-toc .nav-link.active::before { color: var(--cyan); }
+    .float-toc .nav-link::after { display: none; }
+
+    /* ---------- cover / hero ---------- */
+    .cover {
+      position: relative;
+      display: flex;
+      min-height: 100vh;
+      min-height: 100svh;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+      padding: calc(var(--header-h) + 58px) 0 92px;
+      background: radial-gradient(circle at 50% -6%, #fbfdff 0%, #eef8ff 42%, #f7f4ff 78%, #fbfdff 100%);
+      isolation: isolate;
+    }
+    .cover-grid {
+      position: absolute;
+      z-index: -2;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(38, 119, 211, .055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(38, 119, 211, .055) 1px, transparent 1px);
+      background-size: 64px 64px;
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .95), transparent 82%);
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .95), transparent 82%);
+    }
+    .cover-aurora {
+      position: absolute;
+      z-index: -1;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(16px);
+      animation: drift 17s ease-in-out infinite;
+    }
+    .aurora-one {
+      top: -230px;
+      right: -150px;
+      width: 640px;
+      height: 640px;
+      background: radial-gradient(circle, rgba(64, 201, 255, .3) 0%, rgba(64, 201, 255, .12) 36%, transparent 69%);
+    }
+    .aurora-two {
+      bottom: -290px;
+      left: -190px;
+      width: 720px;
+      height: 540px;
+      background: radial-gradient(circle, rgba(112, 85, 239, .2) 0%, rgba(112, 85, 239, .08) 39%, transparent 70%);
+      animation-delay: -7s;
+      animation-duration: 21s;
+    }
+    .cover-orbits {
+      position: absolute;
+      z-index: -1;
+      inset: 0;
+      pointer-events: none;
+      transform: translate3d(var(--px, 0px), var(--py, 0px), 0);
+      transition: transform .2s ease-out;
+    }
+    .orbit {
+      position: absolute;
+      top: 49%;
+      left: 50%;
+      border: 1px solid rgba(47, 127, 219, .12);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .orbit-a {
+      width: min(1080px, 86vw);
+      height: min(480px, 39vw);
+      transform: translate(-50%, -50%) rotate(-15deg);
+    }
+    .orbit-b {
+      width: min(900px, 73vw);
+      height: min(610px, 53vw);
+      border-color: rgba(112, 85, 239, .1);
+      transform: translate(-50%, -50%) rotate(27deg);
+    }
+    .orbit-c {
+      width: min(660px, 59vw);
+      height: min(660px, 59vw);
+      border-style: dashed;
+      border-color: rgba(25, 189, 242, .12);
+    }
+    .cover-ghost {
+      position: absolute;
+      z-index: -1;
+      top: 50%;
+      right: -7%;
+      width: min(58vw, 780px);
+      opacity: .62;
+      pointer-events: none;
+      transform: translate3d(var(--px, 0px), calc(-50% + var(--py, 0px)), 0);
+      transition: transform .2s ease-out;
+      -webkit-mask-image: radial-gradient(ellipse at 50% 50%, #000 35%, rgba(0, 0, 0, .75) 64%, transparent 79%);
+      mask-image: radial-gradient(ellipse at 50% 50%, #000 35%, rgba(0, 0, 0, .75) 64%, transparent 79%);
+    }
+    .cover-ghost svg { width: 100%; height: auto; overflow: visible; }
+    .ghost-rotor {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: slowSpin 46s linear infinite;
+    }
+    .ghost-rotor-reverse {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: slowSpin 62s linear infinite reverse;
+    }
+    .ghost-pulse {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: ghostPulse 7s ease-in-out infinite;
+    }
+    .ghost-pulse-late { animation-delay: -3.5s; }
+
+    .cover-inner {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+    }
+    .cover-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0 0 24px;
+      padding: 7px 14px;
+      border: 1px solid rgba(197, 221, 242, .95);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .6);
+      color: #1269b8;
+      font-family: var(--mono);
+      font-size: 9.5px;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      animation: rise .8s cubic-bezier(.22, .72, .28, 1) both .04s;
+    }
+    .cover-kicker .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), var(--violet));
+      box-shadow: 0 0 0 4px rgba(25, 189, 242, .1);
+      animation: pulseDot 2.9s ease-in-out infinite;
+    }
+    .cover h1 {
+      max-width: 1180px;
+      margin: 0 auto;
+      color: #122541;
+      font-family: var(--display);
+      font-size: clamp(43px, 5.05vw, 76px);
+      font-weight: 700;
+      letter-spacing: -.045em;
+      line-height: 1.06;
+      text-wrap: balance;
+      animation: rise 1s cubic-bezier(.22, .72, .28, 1) both .1s;
+    }
+    .cover h1 .title-line { display: block; }
+    .cover h1 em {
+      font-style: normal;
+      background: linear-gradient(100deg, #0868ea 4%, #13afea 48%, #7657ed 96%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .paper-authors {
+      margin-top: 28px;
+      color: #2d4764;
+      font-size: 13px;
+      line-height: 1.9;
+      animation: rise 1s cubic-bezier(.22, .72, .28, 1) both .24s;
+    }
+    .paper-authors b { color: #183653; font-weight: 800; white-space: nowrap; }
+    .paper-authors sup { margin-left: 1px; color: #1480d2; font-weight: 800; }
+    .paper-affiliations {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 3px 26px;
+      max-width: 1000px;
+      margin: 7px auto 0;
+      color: #73869b;
+      font-size: 11px;
+      line-height: 1.75;
+      animation: rise 1s cubic-bezier(.22, .72, .28, 1) both .27s;
+    }
+    .paper-affiliations sup { margin-right: 3px; color: #2d80c9; font-weight: 800; }
+
+    .paper-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 11px;
+      margin-top: 27px;
+      animation: rise 1s cubic-bezier(.22, .72, .28, 1) both .32s;
+    }
+    .paper-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 152px;
+      padding: 10px 13px;
+      border: 1px solid #d3e2f4;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, .8);
+      box-shadow: 0 10px 22px rgba(45, 98, 161, .08);
+      color: #17395d;
+      font-size: 11px;
+      font-weight: 800;
+      text-decoration: none;
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease, background .25s ease;
+    }
+    .paper-button:hover {
+      border-color: #b9d5ee;
+      background: #fff;
+      box-shadow: 0 17px 30px rgba(37, 93, 158, .15);
+      color: #12385f;
+      transform: translateY(-3px);
+    }
+    .paper-button svg { width: 17px; height: 17px; flex: none; }
+    .paper-button b {
+      margin-left: auto;
+      color: #7e91a8;
+      font-family: var(--mono);
+      font-size: 8.5px;
+      font-weight: 400;
+      white-space: nowrap;
+    }
+    .paper-button.dark {
+      border-color: #173252;
+      background: #142d4f;
+      box-shadow: 0 13px 26px rgba(20, 45, 79, .2);
+      color: #fff;
+    }
+    .paper-button.dark:hover {
+      background: #0d2342;
+      color: #fff;
+    }
+    .paper-button.dark b { color: #a9c8ea; }
+
+    .scroll-cue {
+      position: absolute;
+      z-index: 3;
+      bottom: 24px;
+      left: 50%;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: #6a7f96;
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: .04em;
+      transform: translateX(-50%);
+    }
+    .scroll-cue:hover { color: var(--blue); }
+    .scroll-cue span {
+      position: relative;
+      display: block;
+      width: 31px;
+      height: 1px;
+      overflow: hidden;
+      background: #9bb1c6;
+    }
+    .scroll-cue span::after {
+      position: absolute;
+      top: 0;
+      left: -45%;
+      width: 45%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--blue));
+      content: "";
+      animation: cueSweep 2.4s ease-in-out infinite;
+    }
+
+    /* ---------- section language ---------- */
+    .section {
+      position: relative;
+      padding: clamp(88px, 9vw, 128px) 0;
+    }
+    .section-kicker {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 18px;
+      color: #0b71dc;
+      font-family: var(--mono);
+      font-size: 9.5px;
+      font-weight: 500;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    .section-kicker .num {
+      display: inline-grid;
+      width: 25px;
+      height: 25px;
+      place-items: center;
+      border: 1px solid #c6dcf2;
+      border-radius: 50%;
+      color: #0c7ee5;
+      font-size: 8px;
+      letter-spacing: 0;
+    }
+    .section-title {
+      max-width: 820px;
+      margin: 0;
+      color: #132742;
+      font-family: var(--display);
+      font-size: clamp(38px, 4.35vw, 60px);
+      font-weight: 700;
+      letter-spacing: -.045em;
+      line-height: 1.07;
+      text-wrap: balance;
+    }
+    .section-title em {
+      font-style: normal;
+      background: linear-gradient(100deg, #096bef, #15b4ee 48%, #7659ef);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .section-intro {
+      max-width: 460px;
+      margin: 0 0 5px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.82;
+    }
+    .split-heading {
+      display: grid;
+      grid-template-columns: minmax(0, 1.32fr) minmax(280px, .68fr);
+      gap: clamp(36px, 6vw, 82px);
+      align-items: end;
+    }
+
+    /* ---------- reveal motion ---------- */
+    .js [data-reveal] {
+      opacity: 0;
+      transform: translateY(34px);
+      transition:
+        opacity .9s cubic-bezier(.22, .72, .28, 1),
+        transform 1s cubic-bezier(.22, .72, .28, 1);
+      transition-delay: var(--delay, 0ms);
+    }
+    .js [data-reveal].is-visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* ---------- abstract ---------- */
+    .abstract-section {
+      border-top: 1px solid rgba(220, 232, 245, .7);
+      background: #fff;
+    }
+    .abstract-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(300px, .72fr);
+      gap: 34px;
+      align-items: start;
+      margin-top: 46px;
+    }
+    .abstract-panel {
+      position: relative;
+      overflow: hidden;
+      padding: clamp(26px, 4vw, 47px);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background:
+        radial-gradient(circle at 100% 0%, rgba(25, 189, 242, .06), transparent 38%),
+        #fff;
+      box-shadow: var(--shadow-sm);
+    }
+    .abstract-panel::before {
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--blue), var(--cyan) 54%, var(--violet));
+      content: "";
+    }
+    .panel-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid #e8f0f8;
+      color: #8497ab;
+      font-family: var(--mono);
+      font-size: 8.5px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .panel-top span:last-child { color: #0c7ed7; }
+    .abstract-copy { margin-top: 24px; }
+    .abstract-copy p {
+      margin: 0 0 17px;
+      color: #41566e;
+      font-size: 14.5px;
+      line-height: 1.92;
+      text-align: justify;
+    }
+    .abstract-copy p:last-child { margin-bottom: 0; }
+    
+    .abstract-copy p:first-of-type::first-letter {
+      float: left;
+      margin: 8px 10px 0 0;
+      color: #122541;
+      font-family: "Inter", Arial, sans-serif;
+      font-size: 55px;
+      font-weight:600;
+      line-height: 0.76;
+    }
+
+    .keyword-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin: 28px 0 0;
+      padding: 20px 0 0;
+      border-top: 1px solid #e8f0f8;
+      list-style: none;
+    }
+    .keyword-row li {
+      padding: 5px 9px;
+      border: 1px solid #d9e8f5;
+      border-radius: 6px;
+      background: #f5faff;
+      color: #4f7190;
+      font-family: var(--mono);
+      font-size: 8.5px;
+      letter-spacing: .015em;
+    }
+    .loop-stack {
+      position: sticky;
+      top: calc(var(--header-h) + 26px);
+      display: grid;
+      gap: 0;
+    }
+    .loop-card {
+      position: relative;
+      overflow: hidden;
+      padding: 25px 24px 23px;
+      border: 1px solid #d9e8f5;
+      border-radius: 17px;
+      background: linear-gradient(150deg, #f8fcff 0%, #f4f2ff 100%);
+      box-shadow: 0 14px 34px rgba(43, 106, 168, .06);
+      transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+    }
+    .loop-card::after {
+      position: absolute;
+      top: -55px;
+      right: -45px;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(25, 189, 242, .14), transparent 68%);
+      content: "";
+      pointer-events: none;
+    }
+    .loop-card:hover {
+      border-color: #c4ddf2;
+      box-shadow: 0 22px 47px rgba(33, 91, 151, .11);
+      transform: translateY(-3px);
+    }
+    .loop-no {
+      color: #0d7bdc;
+      font-family: var(--mono);
+      font-size: 8.5px;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+    .loop-card h3 {
+      margin: 11px 0 8px;
+      color: #1a3c62;
+      font-family: var(--display);
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -.045em;
+      line-height: 1.1;
+    }
+    .loop-card p {
+      margin: 0;
+      color: #5d7690;
+      font-size: 12.5px;
+      line-height: 1.72;
+    }
+    .loop-foot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 18px;
+      color: #7b91a7;
+      font-family: var(--mono);
+      font-size: 8px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .loop-foot i {
+      display: block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), var(--violet));
+      box-shadow: 0 0 0 3px rgba(25, 189, 242, .09);
+    }
+    .loop-link {
+      position: relative;
+      display: grid;
+      height: 42px;
+      place-items: center;
+    }
+    .loop-link::before {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 1px;
+      background: linear-gradient(#c7e2f6, #c7c2f7);
+      content: "";
+    }
+    .loop-link span {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      width: 22px;
+      height: 22px;
+      place-items: center;
+      border: 1px solid #cfe2f4;
+      border-radius: 50%;
+      background: #fff;
+      color: #1ba6e4;
+      font-size: 10px;
+      animation: nudgeDown 2.5s ease-in-out infinite;
+    }
+
+    /* ---------- overview ---------- */
+    .overview-section {
+      border-block: 1px solid rgba(219, 233, 245, .85);
+      background:
+        radial-gradient(circle at 88% 20%, rgba(112, 85, 239, .055), transparent 36%),
+        linear-gradient(180deg, #f8fcff 0%, #eef8ff 58%, #f7fbff 100%);
+    }
+    .overview-section .split-heading { margin-bottom: 42px; }
+    .figure-card {
+      position: relative;
+      width: 100%;
+      margin: 0;
+      overflow: hidden;
+      border: 1px solid #d8e7f5;
+      border-radius: var(--radius);
+      background: #fff;
+      box-shadow: var(--shadow-md);
+    }
+    .figure-head {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 14px 19px;
+      border-bottom: 1px solid #e2edf7;
+      background: rgba(249, 252, 255, .92);
+    }
+    .figure-title {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      min-width: 0;
+    }
+    .fig-no {
+      color: #0e73d0;
+      font-family: var(--mono);
+      font-size: 8.5px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .fig-desc {
+      overflow: hidden;
+      color: #425c77;
+      font-size: 11.5px;
+      font-weight: 800;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .fig-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-left: auto;
+    }
+    .fig-tags span {
+      padding: 4px 8px;
+      border: 1px solid #dce9f5;
+      border-radius: 999px;
+      background: #fff;
+      color: #70849a;
+      font-family: var(--mono);
+      font-size: 7.5px;
+      letter-spacing: .025em;
+      white-space: nowrap;
+    }
+    .fig-expand {
+      display: inline-flex;
+      flex: none;
+      align-items: center;
+      gap: 5px;
+      margin-left: 4px;
+      color: #7a8fa5;
+      font-family: var(--mono);
+      font-size: 8px;
+      white-space: nowrap;
+    }
+    .fig-expand svg { width: 11px; height: 11px; }
+    .figure-media {
+      position: relative;
+      display: block;
+      width: 100%;
+      padding: 0;
+      overflow: hidden;
+      border: 0;
+      background: #fff;
+      color: inherit;
+      cursor: zoom-in;
+      text-align: inherit;
+    }
+    .figure-media img {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #fff;
+      transition: transform .9s cubic-bezier(.2, .7, .2, 1), filter .4s ease;
+    }
+    .figure-media:hover img { transform: scale(1.012); }
+    .figure-media:focus-visible { outline-offset: -4px; }
+    .zoom-badge {
+      position: absolute;
+      right: 16px;
+      bottom: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border: 1px solid rgba(255, 255, 255, .16);
+      border-radius: 999px;
+      background: rgba(10, 38, 71, .82);
+      box-shadow: 0 8px 22px rgba(9, 32, 60, .18);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 8px;
+      letter-spacing: .03em;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity .25s ease, transform .25s ease;
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+    }
+    .zoom-badge svg { width: 11px; height: 11px; }
+    .figure-media:hover .zoom-badge,
+    .figure-media:focus-visible .zoom-badge {
+      opacity: 1;
+      transform: none;
+    }
+    .figure-caption {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 19px 16px;
+      border-top: 1px solid #e4eef8;
+      background: #fbfdff;
+    }
+    .caption-index {
+      flex: none;
+      padding-top: 2px;
+      color: #0d79d3;
+      font-family: var(--mono);
+      font-size: 8px;
+      letter-spacing: .1em;
+    }
+    .figure-caption p {
+      flex: 1;
+      margin: 0;
+      color: #6b7f95;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+    .figure-caption .caption-source {
+      flex: none;
+      color: #97a8ba;
+      font-family: var(--mono);
+      font-size: 8px;
+      letter-spacing: .04em;
+      white-space: nowrap;
+    }
+    .figure-card.tall .figure-media img { background: #fff; }
+
+    /* ---------- comparison ---------- */
+    .comparison-section { background: #fff; }
+    .compare-block { margin-top: 57px; }
+    .compare-block:first-of-type { margin-top: 49px; }
+    .compare-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 30px;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #e3edf7;
+    }
+    .compare-title {
+      display: flex;
+      align-items: baseline;
+      gap: 13px;
+      min-width: 0;
+    }
+    .compare-index {
+      flex: none;
+      color: #0c7ee5;
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: .06em;
+    }
+    .compare-head h3 {
+      margin: 0;
+      color: #183653;
+      font-family: var(--display);
+      font-size: clamp(26px, 2.7vw, 34px);
+      font-weight: 600;
+      letter-spacing: -.045em;
+      line-height: 1.1;
+    }
+    .compare-head p {
+      max-width: 440px;
+      margin: 0 0 3px;
+      color: #7b8da2;
+      font-size: 11.5px;
+      line-height: 1.55;
+      text-align: right;
+    }
+
+    /* ---------- downstream ---------- */
+    .downstream-section {
+      border-top: 1px solid rgba(219, 233, 245, .75);
+      background:
+        radial-gradient(circle at 8% 20%, rgba(25, 189, 242, .055), transparent 34%),
+        #f7fbff;
+    }
+    .application-group { margin-top: 50px; }
+    .application-head {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 21px;
+      align-items: center;
+      padding: 20px 0 19px;
+      border-top: 1px solid #dce8f4;
+    }
+    .application-number {
+      color: transparent;
+      font-family: var(--display);
+      font-size: clamp(32px, 3.3vw, 44px);
+      font-weight: 600;
+      letter-spacing: -.06em;
+      line-height: .85;
+      background: linear-gradient(135deg, #0c70e9, #1cb4ec 55%, #7558ee);
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+    .application-head h3 {
+      margin: 0;
+      color: #183653;
+      font-family: var(--display);
+      font-size: clamp(25px, 2.5vw, 32px);
+      font-weight: 600;
+      letter-spacing: -.045em;
+      line-height: 1.1;
+    }
+    .application-head p {
+      margin: 4px 0 0;
+      color: #7b8da2;
+      font-size: 11.5px;
+    }
+    .app-stats {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 7px;
+    }
+    .app-stat {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      padding: 7px 10px;
+      border: 1px solid #d5e5f3;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .8);
+      color: #60788f;
+      font-family: var(--mono);
+      font-size: 8px;
+      white-space: nowrap;
+    }
+    .app-stat b {
+      color: #0a6dca;
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+    }
+    .application-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.38fr) minmax(0, .88fr);
+      gap: 19px;
+      align-items: stretch;
+    }
+    .application-grid .figure-card {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .application-grid .figure-media {
+      display: flex;
+      flex: 1;
+      align-items: center;
+      background: #fff;
+    }
+    .application-grid .figure-media img {
+      max-height: 370px;
+      object-fit: contain;
+    }
+    .application-grid .figure-caption { margin-top: auto; }
+
+    /* ---------- closing ---------- */
+    .closing {
+      position: relative;
+      overflow: hidden;
+      padding: clamp(92px, 10vw, 130px) 0 clamp(82px, 9vw, 115px);
+      border-top: 1px solid rgba(219, 233, 245, .78);
+      background:
+        radial-gradient(circle at 50% 10%, rgba(25, 189, 242, .09), transparent 42%),
+        radial-gradient(circle at 50% 100%, rgba(112, 85, 239, .07), transparent 43%),
+        #fbfdff;
+      text-align: center;
+    }
+    .closing-mark {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      margin-bottom: 24px;
+    }
+    .closing-mark::before,
+    .closing-mark::after {
+      position: absolute;
+      top: 7px;
+      width: 33px;
+      height: 33px;
+      border: 1px solid #9cc8ea;
+      border-radius: 50%;
+      content: "";
+    }
+    .closing-mark::before { left: 1px; }
+    .closing-mark::after { right: 1px; border-color: #b4a5ee; }
+    .closing-mark i {
+      position: absolute;
+      z-index: 2;
+      top: 21px;
+      left: 21px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), var(--violet));
+      box-shadow: 0 0 0 5px rgba(25, 189, 242, .1);
+    }
+    .closing h2 {
+      max-width: 880px;
+      margin: 0 auto;
+      color: #122541;
+      font-family: var(--display);
+      font-size: clamp(39px, 5vw, 64px);
+      font-weight: 700;
+      letter-spacing: -.048em;
+      line-height: 1.08;
+      text-wrap: balance;
+    }
+    .closing h2 em {
+      font-style: normal;
+      background: linear-gradient(100deg, #096bef, #15b4ee 48%, #7659ef);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .closing-copy {
+      max-width: 620px;
+      margin: 21px auto 0;
+      color: #64798f;
+      font-size: 14px;
+      line-height: 1.8;
+      text-wrap: balance;
+    }
+    .closing .paper-actions { margin-top: 28px; }
+    .closing-meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 7px;
+      margin-top: 35px;
+    }
+    .closing-meta span {
+      padding: 5px 9px;
+      border: 1px solid #dbe9f5;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .72);
+      color: #7a8fa6;
+      font-family: var(--mono);
+      font-size: 8px;
+      letter-spacing: .04em;
+    }
+
+    footer {
+      padding: 26px 0;
+      background: var(--navy);
+      color: #8faed2;
+      font-family: var(--mono);
+      font-size: 9px;
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .footer-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #f0f8ff;
+      font-family: var(--display);
+      font-size: 18px;
+      letter-spacing: -.045em;
+    }
+    .footer-brand .brand-mark { transform: scale(.72); transform-origin: left center; }
+    .footer-inner p { margin: 0; }
+    .footer-inner a { color: #c8e4ff; }
+    .footer-inner a:hover { color: #fff; }
+    .footer-links { display: flex; align-items: center; gap: 18px; }
+    .back-top { white-space: nowrap; }
+
+    .to-top {
+      position: fixed;
+      z-index: 44;
+      right: 24px;
+      bottom: 24px;
+      display: grid;
+      width: 41px;
+      height: 41px;
+      place-items: center;
+      border: 1px solid #cfe1f2;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .88);
+      box-shadow: 0 12px 28px rgba(24, 76, 133, .12);
+      color: #2d6e9e;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(9px);
+      transition: opacity .25s ease, transform .25s ease, box-shadow .25s ease;
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+    }
+    .to-top.is-visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: none;
+    }
+    .to-top:hover { box-shadow: 0 16px 34px rgba(24, 76, 133, .18); }
+    .to-top svg { width: 14px; height: 14px; }
+
+    /* ---------- lightbox ---------- */
+    .lightbox {
+      position: fixed;
+      z-index: 120;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 34px 70px;
+      background: rgba(4, 14, 32, .91);
+      -webkit-backdrop-filter: blur(13px);
+      backdrop-filter: blur(13px);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity .25s ease, visibility .25s ease;
+    }
+    .lightbox.is-open { opacity: 1; visibility: visible; }
+    .lightbox-inner {
+      display: flex;
+      max-width: 96vw;
+      max-height: 92vh;
+      flex-direction: column;
+      align-items: center;
+      gap: 13px;
+      transform: scale(.985);
+      transition: transform .28s cubic-bezier(.2, .8, .2, 1);
+    }
+    .lightbox.is-open .lightbox-inner { transform: none; }
+    .lightbox img {
+      display: block;
+      max-width: 92vw;
+      max-height: 82vh;
+      border-radius: 9px;
+      background: #fff;
+      box-shadow: 0 32px 90px rgba(0, 0, 0, .4);
+      object-fit: contain;
+    }
+    .lightbox-caption {
+      max-width: 920px;
+      margin: 0;
+      color: #dcecff;
+      font-size: 11px;
+      line-height: 1.6;
+      text-align: center;
+    }
+    .lightbox-count {
+      color: #89a9c9;
+      font-family: var(--mono);
+      font-size: 8px;
+      letter-spacing: .08em;
+    }
+    .lightbox-close,
+    .lightbox-nav {
+      position: fixed;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(201, 229, 255, .22);
+      border-radius: 50%;
+      background: rgba(16, 40, 69, .65);
+      color: #e7f5ff;
+      cursor: pointer;
+      transition: background .2s ease, transform .2s ease;
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+    }
+    .lightbox-close:hover,
+    .lightbox-nav:hover { background: rgba(33, 78, 125, .85); transform: scale(1.05); }
+    .lightbox-close {
+      top: 19px;
+      right: 19px;
+      width: 39px;
+      height: 39px;
+    }
+    .lightbox-nav {
+      top: 50%;
+      width: 43px;
+      height: 43px;
+      transform: translateY(-50%);
+    }
+    .lightbox-nav:hover { transform: translateY(-50%) scale(1.05); }
+    .lightbox-prev { left: 18px; }
+    .lightbox-next { right: 18px; }
+    .lightbox-nav[hidden] { display: none; }
+    .lightbox-close svg,
+    .lightbox-nav svg { width: 16px; height: 16px; }
+
+    /* ---------- responsive ---------- */
+    @media (max-width: 1180px) {
+      .float-toc { display: none; }
+      .top-nav { gap: 0; }
+      .nav-link { padding-inline: 9px; font-size: 10.5px; }
+      .brand-sub { display: none; }
+    }
+    @media (max-width: 980px) {
+      :root { --header-h: 66px; }
+      .header-inner { width: min(100% - 32px, 1320px); gap: 16px; }
+      .top-nav { display: none; }
+      .menu-toggle { display: block; }
+      .mobile-menu { display: flex; }
+      .header-cta { padding: 8px 12px; font-size: 10px; }
+      .brand-name { font-size: 22px; }
+      .cover { padding-top: calc(var(--header-h) + 48px); padding-bottom: 80px; }
+      .cover-ghost { right: -32%; width: 760px; opacity: .35; }
+      .split-heading { grid-template-columns: 1fr; gap: 24px; }
+      .section-intro { max-width: 620px; }
+      .abstract-layout { grid-template-columns: 1fr; }
+      .loop-stack { position: static; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .loop-link { display: none; }
+      .application-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 720px) {
+      .shell { width: min(100% - 32px, 1240px); }
+      .section { padding: 76px 0; }
+      .cover { min-height: 100vh; min-height: 100svh; padding-top: calc(var(--header-h) + 45px); padding-bottom: 74px; }
+      .cover h1 { font-size: clamp(38px, 9.3vw, 54px); letter-spacing: -.04em; }
+      .paper-authors { font-size: 11.5px; line-height: 1.95; }
+      .paper-affiliations { display: block; font-size: 10px; }
+      .paper-affiliations span { display: block; }
+      .paper-actions { gap: 8px; }
+      .cover .paper-actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .cover .paper-button {
+        width: 100%;
+        min-width: 0;
+        justify-content: center;
+        padding: 10px 8px;
+      }
+      .paper-button b { display: none; }
+      .scroll-cue { display: none; }
+      .cover-ghost { right: -58%; top: 52%; width: 780px; opacity: .2; }
+      .section-title { font-size: clamp(34px, 8.4vw, 46px); }
+      .section-intro { font-size: 13px; }
+      .abstract-copy p { font-size: 13.5px; line-height: 1.86; text-align: left; }
+      .abstract-copy p:first-of-type::first-letter {
+        float: none;
+        margin: 0;
+        color: inherit;
+        font-family: inherit;
+        font-size: inherit;
+        font-weight: inherit;
+        line-height: inherit;
+        font-variation-settings: normal;
+      }
+      .loop-stack { grid-template-columns: 1fr; }
+      .figure-head { flex-wrap: wrap; gap: 9px 14px; padding: 12px 14px; }
+      .fig-tags { order: 3; width: 100%; margin-left: 0; }
+      .fig-expand { margin-left: auto; }
+      .figure-caption { flex-wrap: wrap; gap: 5px 11px; padding: 12px 14px 14px; }
+      .figure-caption p { flex-basis: calc(100% - 50px); font-size: 10.5px; }
+      .figure-caption .caption-source { display: none; }
+      .zoom-badge { right: 10px; bottom: 10px; opacity: .9; transform: none; }
+      .compare-head { display: block; }
+      .compare-head p { margin-top: 7px; text-align: left; }
+      .application-head { grid-template-columns: auto 1fr; gap: 13px; }
+      .app-stats { grid-column: 1 / -1; justify-content: flex-start; }
+      .application-grid { grid-template-columns: 1fr; }
+      .application-grid .figure-media img { max-height: none; }
+      .footer-inner { flex-direction: column; gap: 11px; text-align: center; }
+      .footer-links { flex-wrap: wrap; justify-content: center; gap: 12px; }
+      .to-top { right: 16px; bottom: 16px; }
+      .lightbox { padding: 64px 12px 70px; }
+      .lightbox img { max-width: 94vw; max-height: 74vh; }
+      .lightbox-prev { left: 12px; }
+      .lightbox-next { right: 12px; }
+      .lightbox-nav { top: auto; bottom: 16px; transform: none; }
+      .lightbox-nav:hover { transform: scale(1.05); }
+      .lightbox-close { top: 12px; right: 12px; }
+    }
+    @media (max-width: 470px) {
+      .cover-kicker { font-size: 8px; letter-spacing: .1em; padding: 6px 10px; }
+      .cover h1 { font-size: clamp(31px, 8.7vw, 34px); }
+      .header-cta { display: none; }
+      .brand-name { font-size: 21px; }
+      .panel-top span:last-child { display: none; }
+      .abstract-panel { padding: 23px 19px; }
+      .application-number { font-size: 29px; }
+      .application-head h3 { font-size: 24px; }
+      .application-head p { font-size: 10.5px; }
+      .lightbox-caption { font-size: 10px; }
+    }
+    @media (min-width: 1560px) {
+      .float-toc { display: block; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
+      .js [data-reveal] { opacity: 1; transform: none; }
+      .cover-ghost,
+      .cover-orbits { transform: translate3d(0, 0, 0); }
+      .cover-ghost { transform: translateY(-50%); }
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(26px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes drift {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(-25px, 28px, 0) scale(1.045); }
+    }
+    @keyframes slowSpin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes ghostPulse {
+      0%, 100% { opacity: .45; transform: scale(.98); }
+      50% { opacity: .9; transform: scale(1.025); }
+    }
+    @keyframes pulseDot {
+      0%, 100% { box-shadow: 0 0 0 4px rgba(25, 189, 242, .1); }
+      50% { box-shadow: 0 0 0 7px rgba(112, 85, 239, .06); }
+    }
+    @keyframes cueSweep {
+      0% { left: -45%; }
+      55%, 100% { left: 105%; }
+    }
+    @keyframes nudgeDown {
+      0%, 100% { transform: translateY(-1px); }
+      50% { transform: translateY(3px); }
+    }
+  </style>
+</head>
+
+<body>
+  <a class="skip-link" href="#abstract">Skip to content</a>
+  <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+
+  <header class="site-header" id="siteHeader">
+    <div class="header-inner">
+      <a class="brand" href="#top" aria-label="SelfFusion home">
+        <span class="brand-mark" aria-hidden="true"><i></i></span>
+        <span class="brand-name">SelfFusion</span>
+        <span class="brand-sub">IR · VIS</span>
+      </a>
+
+      <nav class="top-nav" aria-label="Primary navigation">
+        <a class="nav-link" href="#abstract">Abstract</a>
+        <a class="nav-link" href="#overview">Overview</a>
+        <a class="nav-link" href="#comparison">Comparison</a>
+        <a class="nav-link" href="#downstream">Applications</a>
+      </nav>
+
+      <div class="header-actions">
+        <a class="header-cta" href="https://github.com/HengshuaiCui/SelfFusion" target="_blank" rel="noopener noreferrer">
+          GitHub
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg>
+        </a>
+        <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="mobileMenu" aria-label="Open menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="mobile-menu" id="mobileMenu" aria-label="Mobile navigation">
+    <a class="nav-link" href="#abstract">Abstract</a>
+    <a class="nav-link" href="#overview">Overview</a>
+    <a class="nav-link" href="#comparison">Comparison</a>
+    <a class="nav-link" href="#downstream">Applications</a>
+  </nav>
+
+  <aside class="float-toc" id="floatToc" aria-label="On this page">
+    <span>ON THIS PAGE</span>
+    <nav>
+      <a class="nav-link" data-index="01" href="#abstract">Abstract</a>
+      <a class="nav-link" data-index="02" href="#overview">Overview</a>
+      <a class="nav-link" data-index="03" href="#comparison">Comparison</a>
+      <a class="nav-link" data-index="04" href="#downstream">Applications</a>
+    </nav>
+  </aside>
+
+  <main id="top">
+    <!-- ================= COVER ================= -->
+    <section class="cover" aria-labelledby="paper-title">
+      <div class="cover-grid" aria-hidden="true"></div>
+      <div class="cover-aurora aurora-one" aria-hidden="true"></div>
+      <div class="cover-aurora aurora-two" aria-hidden="true"></div>
+
+      <div class="cover-orbits" aria-hidden="true">
+        <span class="orbit orbit-a"></span>
+        <span class="orbit orbit-b"></span>
+        <span class="orbit orbit-c"></span>
+      </div>
+
+      <div class="cover-ghost" aria-hidden="true">
+        <svg viewBox="0 0 820 720" fill="none">
+          <defs>
+            <linearGradient id="ghostStroke" x1="80" y1="80" x2="740" y2="650" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#18B8EE" stop-opacity=".7"/>
+              <stop offset=".52" stop-color="#1789EA" stop-opacity=".42"/>
+              <stop offset="1" stop-color="#7055EF" stop-opacity=".55"/>
+            </linearGradient>
+            <radialGradient id="ghostFillA" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(318 350) rotate(90) scale(230)">
+              <stop stop-color="#19BDF2" stop-opacity=".11"/>
+              <stop offset="1" stop-color="#19BDF2" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="ghostFillB" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(500 350) rotate(90) scale(230)">
+              <stop stop-color="#7055EF" stop-opacity=".12"/>
+              <stop offset="1" stop-color="#7055EF" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="lensFill" x1="330" y1="200" x2="480" y2="520" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#19BDF2" stop-opacity=".15"/>
+              <stop offset=".55" stop-color="#1789EA" stop-opacity=".05"/>
+              <stop offset="1" stop-color="#7055EF" stop-opacity=".14"/>
+            </linearGradient>
+            <filter id="ghostBlur" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="1.3"/>
+            </filter>
+          </defs>
+
+          <g class="ghost-rotor" opacity=".8">
+            <ellipse cx="410" cy="352" rx="386" ry="170" transform="rotate(-17 410 352)" stroke="url(#ghostStroke)" stroke-opacity=".5" stroke-dasharray="1 9"/>
+            <ellipse cx="410" cy="352" rx="324" ry="272" transform="rotate(22 410 352)" stroke="url(#ghostStroke)" stroke-opacity=".3" stroke-dasharray="2 13"/>
+          </g>
+          <g class="ghost-rotor-reverse" opacity=".55">
+            <ellipse cx="410" cy="352" rx="282" ry="140" transform="rotate(8 410 352)" stroke="#1789EA" stroke-opacity=".23"/>
+          </g>
+
+          <g filter="url(#ghostBlur)">
+            <circle cx="318" cy="350" r="216" fill="url(#ghostFillA)" stroke="url(#ghostStroke)" stroke-opacity=".46"/>
+            <circle cx="500" cy="350" r="216" fill="url(#ghostFillB)" stroke="url(#ghostStroke)" stroke-opacity=".46"/>
+            <ellipse cx="409" cy="350" rx="96" ry="199" fill="url(#lensFill)" stroke="#5AC8F4" stroke-opacity=".23"/>
+          </g>
+
+          <g class="ghost-pulse">
+            <circle cx="318" cy="350" r="3.5" fill="#1BB9EE"/>
+            <circle cx="318" cy="350" r="12" stroke="#1BB9EE" stroke-opacity=".26"/>
+          </g>
+          <g class="ghost-pulse ghost-pulse-late">
+            <circle cx="500" cy="350" r="3.5" fill="#7055EF"/>
+            <circle cx="500" cy="350" r="12" stroke="#7055EF" stroke-opacity=".26"/>
+          </g>
+
+          <path d="M410 86v528M90 350h638" stroke="#1789EA" stroke-opacity=".06" stroke-dasharray="2 8"/>
+          <text x="247" y="357" fill="#1778CC" fill-opacity=".42" font-family="DM Mono, monospace" font-size="15" letter-spacing="4">IR</text>
+          <text x="528" y="357" fill="#7055EF" fill-opacity=".38" font-family="DM Mono, monospace" font-size="15" letter-spacing="4">VIS</text>
+          <text x="376" y="665" fill="#2B6FAF" fill-opacity=".28" font-family="DM Mono, monospace" font-size="9" letter-spacing="3">RECONSTRUCTABILITY</text>
+        </svg>
+      </div>
+
+      <div class="shell cover-inner">
+        <h1 id="paper-title">
+          <span class="title-line">SelfFusion: Self-Reflective</span>
+          <span class="title-line">Meta-Optimization for</span>
+          <span class="title-line"><em>Infrared and Visible Image Fusion</em> </span>
+        </h1>
+
+        <div class="paper-authors">
+          <b>Wenda Zhao</b><sup>1</sup> · <b>Hengshuai Cui</b><sup>1</sup> · <b>Yuhang Wang</b><sup>1</sup> ·
+          <b>Jun Yan</b><sup>1</sup> · <b>Haipeng Wang</b><sup>2</sup> · <b>Huchuan Lu</b><sup>1</sup>
+        </div>
+        <div class="paper-affiliations" id="affiliations">
+          <span><sup>1</sup>School of Information and Communication Engineering, Dalian University of Technology, Dalian 116024, P. R. China</span>
+          <span><sup>2</sup>Unit 92728 of PLA, Shanghai 200436, P. R. China</span>
+        </div>
+
+        <div class="paper-actions" aria-label="Research links">
+          <a class="paper-button" href="https://github.com/HengshuaiCui/SelfFusion" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l5 5v13H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M14 3v6h5M8 13h8M8 16h8"/></svg>
+            <span>Paper</span><b>Read</b>
+          </a>
+          <a class="paper-button dark" href="https://github.com/HengshuaiCui/SelfFusion" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.1.68-.22.68-.48v-1.83c-2.78.6-3.37-1.18-3.37-1.18-.46-1.16-1.12-1.46-1.12-1.46-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.33 1.08 2.91.83.09-.65.35-1.08.64-1.33-2.22-.26-4.55-1.11-4.55-4.96 0-1.1.39-2 1.03-2.7-.1-.25-.45-1.27.1-2.66 0 0 .84-.27 2.75 1.03a9.67 9.67 0 0 1 5.02 0c1.91-1.3 2.75-1.03 2.75-1.03.55 1.39.2 2.41.1 2.66.64.7 1.03 1.6 1.03 2.7 0 3.86-2.34 4.7-4.56 4.95.37.32.69.94.69 1.89v2.74c0 .26.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>
+            <span>Code</span><b>GitHub ↗</b>
+          </a>
+          <a class="paper-button" href="mailto:cuihengshuai@mail.dlut.edu.cn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
+            <span>Email</span><b>Contact</b>
+          </a>
+        </div>
+      </div>
+
+      <a class="scroll-cue" href="#abstract"><span aria-hidden="true"></span>Read the abstract</a>
+    </section>
+
+    <!-- ================= COMPARISON ================= -->
+    <section class="section comparison-section" id="comparison" aria-labelledby="comparison-heading">
+      <div class="shell">
+        <div class="split-heading" data-reveal>
+          <div>
+            <p class="section-kicker"><span class="num">03</span>Comparison</p>
+            <h2 class="section-title" id="comparison-heading">Comparison with </br> <em>State-of-the-art Methods</em></h2>
+          </div>
+         
+        </div>
+
+        <article class="compare-block" data-reveal>
+          <div class="compare-head">
+            <div class="compare-title">
+              <span class="compare-index">03.1</span>
+              <h3>Qualitative Comparison</h3>
+            </div>
+          </div>
+          <figure class="figure-card">
+            <div class="figure-head">
+              <div class="figure-title">
+                <span class="fig-no">Figure 2</span>
+                <span class="fig-desc">Qualitative fusion results</span>
+              </div>
+              <span class="fig-expand">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
+                Click to expand
+              </span>
+            </div>
+            <button class="figure-media" type="button" data-lightbox aria-label="Expand Figure 2: qualitative fusion comparison">
+              <img src="assets/fus_vis.png" width="7295" height="3969" alt="Qualitative comparison of SelfFusion and existing infrared and visible image fusion methods" loading="lazy" decoding="async" />
+              <span class="zoom-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>Open full screen</span>
+            </button>
+            <figcaption class="figure-caption">
+              <span class="caption-index">FIG. 02</span>
+              <p>Qualitative comparison between SelfFusion and existing fusion methods. Our method is shown in the final column of each scene.</p>
+              <span class="caption-source">SelfFusion</span>
+            </figcaption>
+          </figure>
+        </article>
+
+        <article class="compare-block" data-reveal>
+          <div class="compare-head">
+            <div class="compare-title">
+              <span class="compare-index">03.2</span>
+              <h3>Quantitative Comparison</h3>
+            </div>
+            <p>Five fusion metrics on MFNet, FMB, and M<sup>3</sup>FD. Higher is better for every metric.</p>
+          </div>
+          <figure class="figure-card">
+            <div class="figure-head">
+              <div class="figure-title">
+                <span class="fig-no">Figure 3</span>
+                <span class="fig-desc">Quantitative fusion performance</span>
+              </div>
+              <span class="fig-expand">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
+                Click to expand
+              </span>
+            </div>
+            <button class="figure-media" type="button" data-lightbox aria-label="Expand Figure 3: quantitative fusion comparison">
+              <img src="assets/fus.png" width="1471" height="398" alt="Quantitative comparison table of fusion metrics on MFNet, FMB, and M3FD" loading="lazy" decoding="async" />
+              <span class="zoom-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>Open full screen</span>
+            </button>
+            <figcaption class="figure-caption">
+              <span class="caption-index">FIG. 03</span>
+              <p>Quantitative fusion comparison on MFNet, FMB, and M<sup>3</sup>FD. EN, SD, SF, AG, and SSIM are reported for each method.</p>
+              <span class="caption-source">SelfFusion</span>
+            </figcaption>
+          </figure>
+        </article>
+      </div>
+    </section>
+
+    <!-- ================= DOWNSTREAM ================= -->
+    <section class="section downstream-section" id="downstream" aria-labelledby="downstream-heading">
+      <div class="shell">
+        <div class="split-heading" data-reveal>
+          <div>
+            <p class="section-kicker"><span class="num">04</span>Applications</p>
+            <h2 class="section-title" id="downstream-heading">Downstream </br> <em>Applications</em></h2>
+          </div>
+        </div>
+
+        <article class="application-group" id="semantic-segmentation" data-reveal>
+          <div class="application-head">
+            <div class="application-number" aria-hidden="true">01</div>
+            <div>
+              <h3>Semantic Segmentation</h3>
+              <p>Qualitative visualizations and quantitative segmentation results</p>
+            </div>
+            <!-- <div class="app-stats" aria-label="Segmentation results">
+              <span class="app-stat"><b>65.88</b>mDice · MFNet</span>
+              <span class="app-stat"><b>53.06</b>mIoU · FMB</span>
+            </div> -->
+          </div>
+
+          <div class="application-grid">
+            <figure class="figure-card">
+              <div class="figure-head">
+                <div class="figure-title">
+                  <span class="fig-no">Figure 4</span>
+                  <span class="fig-desc">Segmentation visualization</span>
+                </div>
+              </div>
+              <button class="figure-media" type="button" data-lightbox aria-label="Expand Figure 4: semantic segmentation qualitative results">
+                <img src="assets/seg_vis.png" width="3720" height="1644" alt="Semantic segmentation qualitative visualizations" loading="lazy" decoding="async" />
+                <span class="zoom-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>Open full screen</span>
+              </button>
+              <figcaption class="figure-caption">
+                <span class="caption-index">FIG. 04</span>
+                <p>Semantic segmentation visualization.</p>
+                <span class="caption-source">SelfFusion</span>
+              </figcaption>
+            </figure>
+
+            <figure class="figure-card">
+              <div class="figure-head">
+                <div class="figure-title">
+                  <span class="fig-no">Figure 5</span>
+                  <span class="fig-desc">Segmentation metrics</span>
+                </div>
+              </div>
+              <button class="figure-media" type="button" data-lightbox aria-label="Expand Figure 5: semantic segmentation quantitative results">
+                <img src="assets/seg.png" width="1020" height="492" alt="Semantic segmentation quantitative results table" loading="lazy" decoding="async" />
+                <span class="zoom-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>Open full screen</span>
+              </button>
+              <figcaption class="figure-caption">
+                <span class="caption-index">FIG. 05</span>
+                <p>Quantitative semantic segmentation results.</p>
+                <span class="caption-source">SelfFusion</span>
+              </figcaption>
+            </figure>
+          </div>
+        </article>
+
+        <article class="application-group" id="object-detection" data-reveal>
+          <div class="application-head">
+            <div class="application-number" aria-hidden="true">02</div>
+            <div>
+              <h3>Object Detection</h3>
+              <p>Qualitative visualizations and quantitative detection results</p>
+            </div>
+            <!-- <!-- <div class="app-stats" aria-label="Detection results">
+              <span class="app-stat"><b>0.713</b>Recall</span>
+              <span class="app-stat"><b>0.796</b>mAP@.5</span>
+            </div> -->
+          </div>
+
+          <div class="application-grid">
+            <figure class="figure-card">
+              <div class="figure-head">
+                <div class="figure-title">
+                  <span class="fig-no">Figure 6</span>
+                  <span class="fig-desc">Detection visualization</span>
+                </div>
+              </div>
+              <button class="figure-media" type="button" data-lightbox aria-label="Expand Figure 6: object detection qualitative results">
+                <img src="assets/det_vis.png" width="3727" height="1650" alt="Object detection qualitative visualizations" loading="lazy" decoding="async" />
+                <span class="zoom-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>Open full screen</span>
+              </button>
+              <figcaption class="figure-caption">
+                <span class="caption-index">FIG. 06</span>
+                <p>Object detection visualization.</p>
+                <span class="caption-source">SelfFusion</span>
+              </figcaption>
+            </figure>
+
+            <figure class="figure-card">
+              <div class="figure-head">
+                <div class="figure-title">
+                  <span class="fig-no">Figure 7</span>
+                  <span class="fig-desc">Detection metrics</span>
+                </div>
+              </div>
+              <button class="figure-media" type="button" data-lightbox aria-label="Expand Figure 7: object detection quantitative results">
+                <img src="assets/det.png" width="1019" height="471" alt="Object detection quantitative results table" loading="lazy" decoding="async" />
+                <span class="zoom-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>Open full screen</span>
+              </button>
+              <figcaption class="figure-caption">
+                <span class="caption-index">FIG. 07</span>
+                <p>Quantitative object detection results.</p>
+                <span class="caption-source">SelfFusion</span>
+              </figcaption>
+            </figure>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ================= CLOSING ================= -->
+    <section class="closing" aria-labelledby="closing-heading">
+      <div class="shell">
+        <div data-reveal>
+          <span class="closing-mark" aria-hidden="true"><i></i></span>
+          <h2 id="closing-heading">SelfFusion<br><em>Self-Reflective Meta-Optimization for Infrared and Visible Image Fusion</em></h2>
+          <p class="closing-copy">
+            Explore the paper and code, or reproduce the evaluation on MFNet, FMB, and M<sup>3</sup>FD.
+          </p>
+          <div class="paper-actions" aria-label="Project links">
+            <a class="paper-button dark" href="https://github.com/HengshuaiCui/SelfFusion" target="_blank" rel="noopener noreferrer">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.1.68-.22.68-.48v-1.83c-2.78.6-3.37-1.18-3.37-1.18-.46-1.16-1.12-1.46-1.12-1.46-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.33 1.08 2.91.83.09-.65.35-1.08.64-1.33-2.22-.26-4.55-1.11-4.55-4.96 0-1.1.39-2 1.03-2.7-.1-.25-.45-1.27.1-2.66 0 0 .84-.27 2.75 1.03a9.67 9.67 0 0 1 5.02 0c1.91-1.3 2.75-1.03 2.75-1.03.55 1.39.2 2.41.1 2.66.64.7 1.03 1.6 1.03 2.7 0 3.86-2.34 4.7-4.56 4.95.37.32.69.94.69 1.89v2.74c0 .26.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>
+              <span>Code &amp; paper</span><b>GitHub ↗</b>
+            </a>
+            <a class="paper-button" href="mailto:cuihengshuai@mail.dlut.edu.cn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
+              <span>Email</span><b>Contact</b>
+            </a>
+          </div>
+          <div class="closing-meta" aria-hidden="true">
+            <span>Infrared + Visible</span><span>Self-reflective</span><span>Loss-free fusion</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell footer-inner">
+      <a class="footer-brand" href="#top">
+        <span class="brand-mark" aria-hidden="true"><i></i></span>
+        SelfFusion
+      </a>
+      <p>© SelfFusion Project · Infrared–visible image fusion research</p>
+      <div class="footer-links">
+        <a href="https://github.com/HengshuaiCui/SelfFusion" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+        <a class="back-top" href="#top">Back to top ↑</a>
+      </div>
+    </div>
+  </footer>
+
+  <button class="to-top" id="toTop" type="button" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg>
+  </button>
+
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-labelledby="lightboxCaption" aria-hidden="true">
+    <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Close image viewer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+    </button>
+    <button class="lightbox-nav lightbox-prev" id="lightboxPrev" type="button" aria-label="Previous image">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>
+    </button>
+    <div class="lightbox-inner">
+      <img id="lightboxImage" src="" alt="" />
+      <p class="lightbox-caption" id="lightboxCaption"></p>
+      <span class="lightbox-count" id="lightboxCount"></span>
+    </div>
+    <button class="lightbox-nav lightbox-next" id="lightboxNext" type="button" aria-label="Next image">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
+    </button>
+  </div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const header = document.getElementById('siteHeader');
+      const progressBar = document.getElementById('progressBar');
+      const floatToc = document.getElementById('floatToc');
+      const toTop = document.getElementById('toTop');
+      const menuToggle = document.getElementById('menuToggle');
+      const mobileMenu = document.getElementById('mobileMenu');
+
+      /* ---------- mobile menu ---------- */
+      const setMenu = (open) => {
+        if (!menuToggle || !mobileMenu) return;
+        mobileMenu.classList.toggle('is-open', open);
+        menuToggle.setAttribute('aria-expanded', String(open));
+        menuToggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+      };
+
+      if (menuToggle) {
+        menuToggle.addEventListener('click', () => {
+          setMenu(menuToggle.getAttribute('aria-expanded') !== 'true');
+        });
+      }
+      if (mobileMenu) {
+        mobileMenu.querySelectorAll('a').forEach((link) => {
+          link.addEventListener('click', () => setMenu(false));
+        });
+      }
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') setMenu(false);
+      });
+      document.addEventListener('click', (event) => {
+        if (!mobileMenu || !mobileMenu.classList.contains('is-open')) return;
+        if (mobileMenu.contains(event.target) || menuToggle.contains(event.target)) return;
+        setMenu(false);
+      });
+
+      /* ---------- progress / sticky UI / transient TOC ---------- */
+      let scrollTicking = false;
+      let tocTimer = null;
+      let tocHovered = false;
+
+      const scheduleTocHide = (delay = 900) => {
+        clearTimeout(tocTimer);
+        if (tocHovered) return;
+        tocTimer = setTimeout(() => {
+          if (!tocHovered) floatToc.classList.remove('is-visible');
+        }, delay);
+      };
+
+      const updateOnScroll = () => {
+        const y = window.scrollY || window.pageYOffset;
+        const doc = document.documentElement;
+        const max = doc.scrollHeight - window.innerHeight;
+        const ratio = max > 0 ? Math.min(1, Math.max(0, y / max)) : 0;
+
+        progressBar.style.transform = `scaleX(${ratio})`;
+        header.classList.toggle('is-scrolled', y > 12);
+        toTop.classList.toggle('is-visible', y > 620);
+
+        if (floatToc && y > 300 && window.innerWidth >= 1560) {
+          floatToc.classList.add('is-visible');
+          scheduleTocHide(1000);
+        } else if (floatToc) {
+          floatToc.classList.remove('is-visible');
+        }
+        scrollTicking = false;
+      };
+
+      const onScroll = () => {
+        if (scrollTicking) return;
+        scrollTicking = true;
+        window.requestAnimationFrame(updateOnScroll);
+      };
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll, { passive: true });
+
+      if (floatToc) {
+        floatToc.addEventListener('mouseenter', () => {
+          tocHovered = true;
+          clearTimeout(tocTimer);
+          floatToc.classList.add('is-visible');
+        });
+        floatToc.addEventListener('mouseleave', () => {
+          tocHovered = false;
+          scheduleTocHide(220);
+        });
+      }
+
+      toTop.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+      });
+
+      /* ---------- reveal on scroll ---------- */
+      const revealItems = document.querySelectorAll('[data-reveal]');
+      if ('IntersectionObserver' in window && !reduceMotion) {
+        const revealObserver = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-visible');
+              revealObserver.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.08, rootMargin: '0px 0px -48px 0px' });
+
+        revealItems.forEach((item) => revealObserver.observe(item));
+      } else {
+        revealItems.forEach((item) => item.classList.add('is-visible'));
+      }
+
+      /* ---------- active navigation ---------- */
+      const navLinks = Array.from(document.querySelectorAll('.nav-link'));
+      const sections = Array.from(new Set(
+        navLinks
+          .map((link) => document.querySelector(link.getAttribute('href')))
+          .filter(Boolean)
+      ));
+
+      const setActiveLink = (id) => {
+        navLinks.forEach((link) => {
+          const match = link.getAttribute('href') === `#${id}`;
+          link.classList.toggle('active', match);
+          if (match) link.setAttribute('aria-current', 'true');
+          else link.removeAttribute('aria-current');
+        });
+      };
+
+      if ('IntersectionObserver' in window && sections.length) {
+        const navObserver = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) setActiveLink(entry.target.id);
+          });
+        }, { rootMargin: '-38% 0px -56% 0px', threshold: 0 });
+
+        sections.forEach((section) => navObserver.observe(section));
+      }
+
+      /* ---------- pointer parallax (desktop, motion allowed) ---------- */
+      const cover = document.querySelector('.cover');
+      if (cover && !reduceMotion && window.matchMedia('(pointer: fine)').matches) {
+        let targetX = 0;
+        let targetY = 0;
+        let currentX = 0;
+        let currentY = 0;
+        let raf = null;
+
+        const animateParallax = () => {
+          currentX += (targetX - currentX) * 0.075;
+          currentY += (targetY - currentY) * 0.075;
+          cover.style.setProperty('--px', `${currentX.toFixed(2)}px`);
+          cover.style.setProperty('--py', `${currentY.toFixed(2)}px`);
+
+          if (Math.abs(targetX - currentX) > 0.1 || Math.abs(targetY - currentY) > 0.1) {
+            raf = window.requestAnimationFrame(animateParallax);
+          } else {
+            raf = null;
+          }
+        };
+
+        cover.addEventListener('pointermove', (event) => {
+          const rect = cover.getBoundingClientRect();
+          targetX = ((event.clientX - rect.left) / rect.width - 0.5) * 20;
+          targetY = ((event.clientY - rect.top) / rect.height - 0.5) * 14;
+          if (!raf) raf = window.requestAnimationFrame(animateParallax);
+        }, { passive: true });
+
+        cover.addEventListener('pointerleave', () => {
+          targetX = 0;
+          targetY = 0;
+          if (!raf) raf = window.requestAnimationFrame(animateParallax);
+        });
+      }
+
+      /* ---------- full-screen figure viewer ---------- */
+      const triggers = Array.from(document.querySelectorAll('[data-lightbox]'));
+      const lightbox = document.getElementById('lightbox');
+      const lightboxImage = document.getElementById('lightboxImage');
+      const lightboxCaption = document.getElementById('lightboxCaption');
+      const lightboxCount = document.getElementById('lightboxCount');
+      const lightboxClose = document.getElementById('lightboxClose');
+      const lightboxPrev = document.getElementById('lightboxPrev');
+      const lightboxNext = document.getElementById('lightboxNext');
+      let activeIndex = -1;
+      let lastFocused = null;
+
+      const figureData = triggers.map((trigger) => {
+        const img = trigger.querySelector('img');
+        const figure = trigger.closest('figure');
+        const caption = figure ? figure.querySelector('.figure-caption p') : null;
+        return {
+          src: img ? img.getAttribute('src') : '',
+          alt: img ? img.getAttribute('alt') : '',
+          caption: caption ? caption.textContent.trim() : (img ? img.getAttribute('alt') : '')
+        };
+      });
+
+      const renderLightbox = (index) => {
+        if (!figureData.length) return;
+        activeIndex = (index + figureData.length) % figureData.length;
+        const data = figureData[activeIndex];
+        lightboxImage.src = data.src;
+        lightboxImage.alt = data.alt;
+        lightboxCaption.textContent = data.caption;
+        lightboxCount.textContent = `${String(activeIndex + 1).padStart(2, '0')} / ${String(figureData.length).padStart(2, '0')}`;
+        const multiple = figureData.length > 1;
+        lightboxPrev.hidden = !multiple;
+        lightboxNext.hidden = !multiple;
+      };
+
+      const openLightbox = (index) => {
+        lastFocused = document.activeElement;
+        renderLightbox(index);
+        lightbox.classList.add('is-open');
+        lightbox.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('is-locked');
+        window.setTimeout(() => lightboxClose.focus({ preventScroll: true }), 30);
+      };
+
+      const closeLightbox = () => {
+        lightbox.classList.remove('is-open');
+        lightbox.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('is-locked');
+        if (lastFocused && typeof lastFocused.focus === 'function') {
+          lastFocused.focus({ preventScroll: true });
+        }
+      };
+
+      triggers.forEach((trigger, index) => {
+        trigger.addEventListener('click', () => openLightbox(index));
+      });
+
+      lightboxClose.addEventListener('click', closeLightbox);
+      lightboxPrev.addEventListener('click', () => renderLightbox(activeIndex - 1));
+      lightboxNext.addEventListener('click', () => renderLightbox(activeIndex + 1));
+
+      lightbox.addEventListener('click', (event) => {
+        if (event.target === lightbox) closeLightbox();
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (!lightbox.classList.contains('is-open')) return;
+        if (event.key === 'Escape') closeLightbox();
+        if (event.key === 'ArrowLeft') renderLightbox(activeIndex - 1);
+        if (event.key === 'ArrowRight') renderLightbox(activeIndex + 1);
+      });
+
+      /* ---------- initial paint ---------- */
+      updateOnScroll();
+    })();
+  </script>
+</body>
+</html>
